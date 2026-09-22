@@ -33,12 +33,13 @@ This is an educational project. Its measurements help build intuition about algo
 
 ## Features
 
-- Benchmarks searching, sorting, and data-processing algorithms.
+- Benchmarks searching, sorting, and data-structure operations.
 - Measures execution time for increasing input sizes.
 - Saves generated graphs as PNG files.
 - Returns generated graphs as Base64-encoded images from the API.
 - Supports interactive Matplotlib visualization.
 - Provides a command-line interface for live experiments.
+- Includes stack and queue operation benchmarks alongside classic algorithm examples.
 
 ## Project Structure
 
@@ -46,6 +47,14 @@ This is an educational project. Its measurements help build intuition about algo
 alu_dsa/
 ├── algo_test.py
 ├── README.md
+├── requirements.txt
+├── tests/
+│   ├── test_queue.py
+│   └── test_stack.py
+├── data_structures/
+│   ├── __init__.py
+│   ├── queue.py
+│   └── stack.py
 ├── my_venv/
 └── *.png                  # Generated benchmark graphs
 ```
@@ -106,7 +115,7 @@ sudo apt install python3-tk
 3. Install the dependencies listed in `requirements.txt`:
 
    ```bash
-  pip install -r requirements.txt
+   pip install -r requirements.txt
    ```
 
 4. If Tkinter is not installed on Ubuntu, install it with:
@@ -160,6 +169,10 @@ python algo_test.py --live unique_users
 python algo_test.py --live bubble_sort
 python algo_test.py --live insertion_sort
 python algo_test.py --live merge_sort
+python algo_test.py --live stack_push
+python algo_test.py --live stack_pop
+python algo_test.py --live queue_enqueue
+python algo_test.py --live queue_dequeue
 ```
 
 Live mode is useful for learning algorithms, comparing growth rates, and experimenting with implementations.
@@ -174,6 +187,10 @@ Live mode is useful for learning algorithms, comparing growth rates, and experim
 | Bubble sort | `O(n^2)` | Repeatedly compares neighboring elements |
 | Insertion sort | `O(n^2)` worst case | Inserts each item into a sorted section |
 | Merge sort | `O(n log n)` | Divides the input and merges sorted halves |
+| Stack push | `O(1)` amortized per push | Appends to the top of a stack |
+| Stack pop | `O(1)` amortized per pop | Removes the most recent stack item |
+| Queue enqueue | `O(1)` amortized per enqueue | Adds an item to the back of a queue |
+| Queue dequeue | `O(1)` amortized per dequeue | Removes the front item from a queue |
 
 ### Algorithm Notes
 
@@ -183,6 +200,8 @@ Live mode is useful for learning algorithms, comparing growth rates, and experim
 - **Bubble sort:** Reverse-sorted input is used as an intentionally unfavorable input to demonstrate substantial `O(n^2)` work.
 - **Insertion sort:** Reverse-sorted input represents a worst-case-style input and produces `O(n^2)` behavior.
 - **Merge sort:** The implementation recursively divides the array, sorts both halves, and merges them. Its expected time complexity is `O(n log n)`.
+- **Stack operations:** The stack implementation uses a Python list and measures repeated `push` and `pop` operations across increasing values of `n`. The benchmark reflects the cost of performing `n` stack operations, which is linear overall.
+- **Queue operations:** The queue implementation uses a `deque` and measures repeated `enqueue` and `dequeue` calls. This demonstrates the near-constant-time behavior of queue operations at scale, while still producing a linear overall trend over `n` operations.
 
 ## How the Benchmark Works
 
@@ -245,6 +264,13 @@ Using cURL:
 curl "http://127.0.0.1:5000/analyze?algo=merge_sort&step=10&n_max=1000"
 ```
 
+Stack and queue examples:
+
+```bash
+curl "http://127.0.0.1:5000/analyze?algo=stack_push&step=10&n_max=1000"
+curl "http://127.0.0.1:5000/analyze?algo=queue_enqueue&step=10&n_max=1000"
+```
+
 ### Example Response
 
 ```json
@@ -271,7 +297,11 @@ If `algo` is not supported, the API returns HTTP `400 Bad Request`:
     "unique_users",
     "bubble_sort",
     "insertion_sort",
-    "merge_sort"
+    "merge_sort",
+    "stack_push",
+    "stack_pop",
+    "queue_enqueue",
+    "queue_dequeue"
   ]
 }
 ```
@@ -286,6 +316,8 @@ When an API benchmark runs, the graph is saved using the algorithm name:
 merge_sort.png
 bubble_sort.png
 linear_search.png
+stack_push.png
+queue_enqueue.png
 ```
 
 The filename follows this pattern:
@@ -335,6 +367,7 @@ For example:
 - Binary search grows slowly because it repeatedly halves the search space.
 - Merge sort grows faster than binary search but slower than quadratic algorithms.
 - Bubble sort and insertion sort can become much slower as `n` grows.
+- Stack and queue operations are usually close to constant per operation, so repeating them `n` times produces an overall linear trend.
 
 A graph provides experimental evidence and intuition. It does not prove a Big-O classification by itself.
 
@@ -424,6 +457,10 @@ unique_users
 bubble_sort
 insertion_sort
 merge_sort
+stack_push
+stack_pop
+queue_enqueue
+queue_dequeue
 ```
 
 For example, use `?algo=linear_search`, not `?algo='linear_search'`. Quotes become part of the query value.
@@ -444,12 +481,16 @@ The algorithm dictionary currently has this shape:
 
 ```python
 Algorithm = {
-    "linear_search": linear_search,
-    "binary_search": binary_search,
-    "unique_users": unique_users,
-    "bubble_sort": bubble_sort,
-    "insertion_sort": insertion_sort,
-    "merge_sort": merge_sort,
+    'linear_search': linear_search,
+    'binary_search': binary_search,
+    'unique_users': unique_users,
+    'bubble_sort': bubble_sort,
+    'insertion_sort': insertion_sort,
+    'merge_sort': merge_sort,
+    'stack_push': benchmark_stack_push,
+    'stack_pop': benchmark_stack_pop,
+    'queue_enqueue': benchmark_queue_enqueue,
+    'queue_dequeue': benchmark_queue_dequeue,
 }
 ```
 
@@ -478,6 +519,10 @@ python algo_test.py --live insertion_sort
 # Bubble sort versus merge sort
 python algo_test.py --live bubble_sort
 python algo_test.py --live merge_sort
+
+# Stack versus queue operations
+python algo_test.py --live stack_push
+python algo_test.py --live queue_enqueue
 ```
 
 Algorithms with the same Big-O complexity can still have different measured execution times because their implementations and constant factors differ.
@@ -491,6 +536,7 @@ Algorithms with the same Big-O complexity can still have different measured exec
 - Build a frontend for the Flask API.
 - Return algorithm metadata such as time complexity, space complexity, and measured execution time.
 - Add selection sort, quick sort, heap sort, counting sort, tree traversal, graph traversal, breadth-first search, depth-first search, and Dijkstra's algorithm.
+- Add more data-structure benchmarks for hash tables, linked lists, trees, and graphs.
 
 ## Learning Goals
 
@@ -499,6 +545,7 @@ This project provides practice with:
 - Searching and sorting algorithms
 - Recursion and divide-and-conquer techniques
 - Lists, sets, dictionaries, and arrays
+- Data structures such as stacks and queues
 - Loops and nested functions
 - Command-line arguments
 - File handling and binary data
