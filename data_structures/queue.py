@@ -15,7 +15,7 @@ class Queue:
         return self.items.popleft()
 
     def front(self):
-        if self.is_empty:
+        if self.is_empty():
             raise IndexError("Cannot view the front of an empty queue")
         return self.items[0]
 
