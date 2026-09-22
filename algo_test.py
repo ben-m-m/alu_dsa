@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from flask import Flask, request, jsonify
 import base64
 from io import BytesIO
+from data_structures.stack import Stack
+from data_structures.queue import Queue
 
 def time_complexity_visualizer(algorithm, algorithm_name, n_min, n_max, n_step):
     times = []
@@ -175,6 +177,55 @@ def merge_sort(n):
 #         for inner_index in range(arr):
 
 
+def benchmark_stack_push(n):
+    stack = Stack()
+    start_time = time.time()
+
+    for i in range(n):
+        stack.push(i)
+
+    end_time = time.time()
+    return end_time - start_time
+
+def benchmark_stack_pop(n):
+    stack = Stack()
+
+    for i in range(n):
+        stack.push(i)
+
+    start_time = time.time()
+
+    for i in range(n):
+        stack.pop()
+
+    end_time = time.time()
+    return end_time - start_time
+
+def benchmark_queue_enqueue(n):
+    queue = Queue()
+
+    start_time = time.time()
+
+    for i in range(n):
+        queue.enqueue(i)
+
+    end_time = time.time()
+    return end_time - start_time
+
+def benchmark_queue_dequeue(n):
+    queue = Queue()
+
+    for i in range(n):
+        queue.enqueue(i)
+
+    start_time = time.time()
+
+    for i in range(n):
+        queue.dequeue()
+
+    end_time = time.time()
+    return end_time - start_time
+
 
 Algorithm = {
     'linear_search': linear_search,
@@ -182,7 +233,11 @@ Algorithm = {
     'unique_users': unique_users,
     'bubble_sort': bubble_sort,
     'insertion_sort': insertion_sort,
-    'merge_sort': merge_sort
+    'merge_sort': merge_sort,
+    'stack_push': benchmark_stack_push,
+    'stack_pop': benchmark_stack_pop,
+    'queue_enqueue': benchmark_queue_enqueue,
+    'queue_dequeue': benchmark_queue_dequeue
 }
 
 app = Flask(__name__)
@@ -208,6 +263,8 @@ def analyze():
         'n_max': n_max,
         'base64img': base64img
     })
+
+
 
 # time_complexity_visualizer(unique_users, 10, 1000, 10)
 # time_complexity_visualizer(binary_search, 10, 10000, 10)
