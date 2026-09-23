@@ -247,6 +247,18 @@ def analyze():
     step = request.args.get('step', type=int)
     n_max = request.args.get('n_max', type=int)
 
+    if algo is None or step is None or n_max is None:
+        return jsonify({
+            "error": "missing parameters",
+            "usage": "/analyze?algo=bubble_sort&step=10&n_max=1000",
+            "available_algorithms": sorted(Algorithm.keys())
+        }), 400
+
+    if step <= 0 or n_max <= 0:
+        return jsonify({
+            "error": "step an n_max must be > 0"
+        })
+
     if algo not in Algorithm:
         return jsonify({
             "error": 'Unknown Algorithm',
@@ -264,7 +276,49 @@ def analyze():
         'base64img': base64img
     })
 
+@app.route('/save', methods=['POST'])
+def save():
+    data = request.get_json()
+    algo = data.get('algo')
+    step = data.get('step')
+    n_max = data.get('n_max')
 
+
+    if algo is None or step is None or n_max is None:
+        return jsonify({
+         "Error": "missing fields",
+         "Available Algorithms": sorted(Algorithm.keys())
+        }), 400
+
+    try:
+        step = int(step)
+        n_max = int(n_max)
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "step and n_max must be integers"
+        }), 400
+    
+    if step <= 0 or n_max <= 0:
+        return jsonify({
+            "error": "step and n_max must be integers"
+        })
+    
+    if algo not in Algorithm:
+        return jsonify({
+            "error": 'Unknown Algorithm',
+            "available_algorithms": list(Algorithm.keys())
+        }), 400
+    
+    algorithm = Algorithm[algo]
+    base64img = time_complexity_visualizer(algorithm, algo, 0, n_max, step)
+        
+    
+    return jsonify({
+        'algorithm': algo,
+        'step': step,
+        'n_max': n_max,
+        'base64img': base64img
+    }), 201
 
 # time_complexity_visualizer(unique_users, 10, 1000, 10)
 # time_complexity_visualizer(binary_search, 10, 10000, 10)
