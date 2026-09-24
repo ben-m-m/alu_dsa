@@ -9,6 +9,20 @@ import base64
 from io import BytesIO
 from data_structures.stack import Stack
 from data_structures.queue import Queue
+import sqlalchemy
+
+engine = sqlalchemy.create_engine('sqlite://algodatabase.db', echo=True)
+
+with engine.connect() as conn:
+    conn.execute(text("""
+    CREATE TABLE IF NOT EXISTS analysis
+    id INT PRIMARY KEY
+    algorithm VARCHAR(100) NOT NULL
+    step INT NOT NULL
+    n_max INT NOT NULL
+    """))
+
+    conn.commit()
 
 def time_complexity_visualizer(algorithm, algorithm_name, n_min, n_max, n_step):
     times = []
