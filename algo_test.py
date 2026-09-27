@@ -14,7 +14,7 @@ import sqlalchemy
 engine = sqlalchemy.create_engine('sqlite://algodatabase.db', echo=True)
 
 with engine.connect() as conn:
-    conn.execute(text("""
+    conn.execute(sqlalchemy.text("""
     CREATE TABLE IF NOT EXISTS analysis
     id INT PRIMARY KEY
     algorithm VARCHAR(100) NOT NULL
