@@ -10,19 +10,26 @@ from io import BytesIO
 from data_structures.stack import Stack
 from data_structures.queue import Queue
 import sqlalchemy
+import uuid
 
-engine = sqlalchemy.create_engine('sqlite://algodatabase.db', echo=True)
+from sqlalchemy import Table, Column, String, Integer
+from sqlalchemy import MetaData, select, insert, update, delete, func
 
-with engine.connect() as conn:
-    conn.execute(sqlalchemy.text("""
-    CREATE TABLE IF NOT EXISTS analysis
-    id INT PRIMARY KEY
-    algorithm VARCHAR(100) NOT NULL
-    step INT NOT NULL
-    n_max INT NOT NULL
-    """))
 
-    conn.commit()
+engine = sqlalchemy.create_engine('sqlite:///algodatabase.db', echo=True)
+
+metadata = MetaData()
+
+analysis = Table (
+    "analysis",
+    metadata,
+    Column("id", String(36), primary_key=True),
+    Column("algorithm", String(100), nullable=False),
+    Column("step", Integer, nullable=False),
+    Column("n_max", Integer, nullable=False)
+)
+
+metadata.create_all(engine)
 
 def time_complexity_visualizer(algorithm, algorithm_name, n_min, n_max, n_step):
     times = []
@@ -254,6 +261,19 @@ Algorithm = {
     'queue_dequeue': benchmark_queue_dequeue
 }
 
+
+def save_analysis_to_db(algo, step, n_max):
+    with engine.connect() as conn:
+        stmt = insert(analysis).values(
+            id=str(uuid.uuid4()),
+            algorithm=algo,
+            step=step,
+            n_max=n_max
+        )
+
+        conn.execute(stmt)
+        conn.commit()
+
 app = Flask(__name__)
 @app.route('/analyze')
 def analyze():
@@ -293,7 +313,7 @@ def analyze():
 @app.route('/save', methods=['POST'])
 def save():
     data = request.get_json()
-    algo = data.get('algo')
+    algo = data.get('algorithm')
     step = data.get('step')
     n_max = data.get('n_max')
 
@@ -301,7 +321,12 @@ def save():
     if algo is None or step is None or n_max is None:
         return jsonify({
          "Error": "missing fields",
-         "Available Algorithms": sorted(Algorithm.keys())
+         "required": [
+                "algorithm",
+                "step",
+                "n_max"
+            ],
+            "Available Algorithms": sorted(Algorithm.keys())
         }), 400
 
     try:
@@ -314,8 +339,8 @@ def save():
     
     if step <= 0 or n_max <= 0:
         return jsonify({
-            "error": "step and n_max must be integers"
-        })
+            "error": "step and n_max must be integers > 0"
+        }), 400
     
     if algo not in Algorithm:
         return jsonify({
@@ -323,15 +348,15 @@ def save():
             "available_algorithms": list(Algorithm.keys())
         }), 400
     
-    algorithm = Algorithm[algo]
-    base64img = time_complexity_visualizer(algorithm, algo, 0, n_max, step)
-        
+    # algorithm = Algorithm[algo]
+    # base64img = time_complexity_visualizer(algorithm, algo, 0, n_max, step)
+    
+    save_analysis_to_db(algo, step, n_max)
     
     return jsonify({
         'algorithm': algo,
         'step': step,
-        'n_max': n_max,
-        'base64img': base64img
+        'n_max': n_max
     }), 201
 
 # time_complexity_visualizer(unique_users, 10, 1000, 10)
