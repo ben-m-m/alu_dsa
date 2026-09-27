@@ -55,35 +55,34 @@ with engine.connect() as conn:
             }
         ]
     )
-    result = conn.execute(sqlalchemy.text("""
-        select * from algotest 
-        where algo_name = :algo_name
-        and step = :step
-    """),
-    {
-        "algo_name": "merge sort",
-        "step": 20
-    }
+    # result = conn.execute(sqlalchemy.text("""
+    #     select * from algotest 
+    #     where algo_name = :algo_name
+    #     and step = :step
+    # """),
+    # {
+    #     "algo_name": "merge sort",
+    #     "step": 20
+    # }
+    # )
+    # select
+    stmt = select(algotest).where(
+        algotest.c.algo_name == "merge sort",
+        algotest.c.step == 20
     )
+
+    result = conn.execute(stmt)
 
     for row in result:
-    # row = result.fetchone()
-    # print("ID:", row.id)
-    # print("Algorithm:", row.algo_name)
-    # print("Step:", row.step)
-    # print("N max:", row.n_max)
         print(row)
 
-    result = conn.execute(sqlalchemy.text("""
-        update algotest
-        set n_max = :new_n_max
-        where algo_name = :algo_name
-    """),
-    {
-        "new_n_max": 2700,
-        "algo_name": "bubble sort"
-    }
-    )
+
+    # update
+    stmt = (
+        update(algotest).where(algotest.c.algo_name == "bubble sort").value(n_max=2700))
+
+    result = conn.execute(stmt)
+    
     print("Rows updated:", result.rowcount)
 
     # result = conn.execute(
@@ -96,12 +95,20 @@ with engine.connect() as conn:
     # for row in result:
     #     print(row)
 
-    result = conn.execute(
-        sqlalchemy.text("""
-    delete from algotest
-    where id = :id
-    """),
-        {"id": "aa41ad94-b886-4aa0-8a69-64bf9c370fc1"}
+    # result = conn.execute(
+    #     sqlalchemy.text("""
+    # delete from algotest
+    # where id = :id
+    # """),
+    #     {"id": "aa41ad94-b886-4aa0-8a69-64bf9c370fc1"}
+    # )
+
+    # delete
+    stmt = delete(algotest).where(
+        algotest.c.id == "aa41ad94-b886-4aa0-8a69-64bf9c370fc1"
     )
+
+    result = conn.execute(stmt)
+
     print("Rows deleted:", result.rowcount)
     conn.commit()
