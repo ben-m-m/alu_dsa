@@ -15,7 +15,7 @@ import uuid
 from sqlalchemy import Table, Column, String, Integer
 from sqlalchemy import MetaData, select, insert, update, delete, func
 
-
+TOKEN = "DEMO"
 engine = sqlalchemy.create_engine('sqlite:///algodatabase.db', echo=True)
 
 metadata = MetaData()
@@ -312,16 +312,26 @@ def analyze():
 
 @app.route('/save', methods=['POST'])
 def save():
+
+    auth = request.headers.get("Authorization", "")
+    token = auth[len("Bearer "):].strip() if auth.startswith("Bearer ") else None
+
+    if token != TOKEN:
+        return jsonify ({
+            "error": "I do not know you"
+        }), 401
+    
     data = request.get_json()
     algo = data.get('algorithm')
     step = data.get('step')
     n_max = data.get('n_max')
+    
 
-
+        
     if algo is None or step is None or n_max is None:
         return jsonify({
-         "Error": "missing fields",
-         "required": [
+        "Error": "missing fields",
+        "required": [
                 "algorithm",
                 "step",
                 "n_max"
