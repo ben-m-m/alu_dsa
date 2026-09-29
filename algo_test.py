@@ -5,6 +5,12 @@ import matplotlib
 matplotlib.use('TkAgg') #interactive backend
 import matplotlib.pyplot as plt
 from flask import Flask, request, jsonify
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    jwt_required,
+    get_jwt_identity
+)
 import base64
 from io import BytesIO
 from data_structures.stack import Stack
@@ -15,7 +21,7 @@ import uuid
 from sqlalchemy import Table, Column, String, Integer
 from sqlalchemy import MetaData, select, insert, update, delete, func
 
-TOKEN = "DEMO"
+# TOKEN = "DEMO"
 engine = sqlalchemy.create_engine('sqlite:///algodatabase.db', echo=True)
 
 metadata = MetaData()
@@ -275,6 +281,48 @@ def save_analysis_to_db(algo, step, n_max):
         conn.commit()
 
 app = Flask(__name__)
+
+app.config["JWT_SECRET_KEY"] = "secrets"
+jwt = JWTManager(app)
+
+@jwt.unauthorized_loader
+def unauthorized(error):
+    return jsonify({
+        "error": "I do not know you"
+    }), 401
+
+@jwt.invalid_token_loader
+def invalid_token(error):
+    return jsonify({
+        "error": "Invalid token"
+        }), 401
+
+@jwt.expired_token_loader
+def expired_token(jwt_header, jwt_payload):
+    return jsonify({
+        "error": "Token has expired"
+    }), 401
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+
+    username = data.get("username")
+    password = data.get("password")
+
+    if username != "admin" or password != "1234":
+        return jsonify({
+            "error": "Invalid username or password"
+        }), 401
+
+    access_token = create_access_token(identity=username)
+
+    return jsonify({
+        "access_token": access_token
+    }), 200
+
+
+
 @app.route('/analyze')
 def analyze():
     algo = request.args.get('algo')
@@ -290,8 +338,8 @@ def analyze():
 
     if step <= 0 or n_max <= 0:
         return jsonify({
-            "error": "step an n_max must be > 0"
-        })
+            "error": "step and n_max must be > 0"
+        }), 400
 
     if algo not in Algorithm:
         return jsonify({
@@ -311,15 +359,17 @@ def analyze():
     })
 
 @app.route('/save', methods=['POST'])
+@jwt_required()
 def save():
 
-    auth = request.headers.get("Authorization", "")
-    token = auth[len("Bearer "):].strip() if auth.startswith("Bearer ") else None
+    # auth = request.headers.get("Authorization", "")
+    # token = auth[len("Bearer "):].strip() if auth.startswith("Bearer ") else None
 
-    if token != TOKEN:
-        return jsonify ({
-            "error": "I do not know you"
-        }), 401
+    # if token != TOKEN:
+    #     return jsonify ({
+    #         "error": "I do not know you"
+    #     }), 401
+
     
     data = request.get_json()
     algo = data.get('algorithm')
